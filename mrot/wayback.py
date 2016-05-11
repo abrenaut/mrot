@@ -4,8 +4,8 @@ import logging
 import urllib2
 import re
 from datetime import datetime
-from mrot.exceptions import ScrapeError
 from multiprocessing.pool import ThreadPool
+from .exceptions import ScrapeError
 
 logger = logging.getLogger('mrot.wayback')
 

@@ -5,7 +5,7 @@
 Convenience wrapper for running mrot directly from source tree.
 """
 
-from mrot.cli import main
+from . import cli
 
 if __name__ == '__main__':
-    main()
+    cli.main()

@@ -9,14 +9,15 @@ import urllib2
 import urllib
 import json
 from bs4 import BeautifulSoup, element
-from mrot.exceptions import ScrapeError
-from mrot import wayback
 from datetime import datetime
+from .exceptions import ScrapeError
+from . import wayback
 
 logger = logging.getLogger('mrot.imdb')
 
 OMDB_API_TEMPLATE = 'http://www.omdbapi.com/?{query}'
 IMDB_MOVIE_TEMPLATE = "http://www.imdb.com/title/{movie_id}/"
+IMDB_NO_POSTER = 'http://www.imdb.com/images/nopicture/medium/video.png'
 
 
 class IMDbMovie(object):
@@ -62,7 +63,8 @@ class IMDbMovie(object):
         img_fig.axes.get_xaxis().set_visible(False)
         img_fig.axes.get_yaxis().set_visible(False)
         # Show the poster on the first column
-        f = urllib2.urlopen(self.poster)
+        poster = self.poster if self.poster != 'N/A' else IMDB_NO_POSTER
+        f = urllib2.urlopen(poster)
         img = Image.open(f)
         img_fig.imshow(img)
 
@@ -123,28 +125,32 @@ def read_ratings(imdb_page_content):
     """
     Extract a movie rating from its imdb page
     :param imdb_page_content:
+    :raise: A ScrapeError if the rating could not be extracted
     :return:
     """
-    soup = BeautifulSoup(imdb_page_content, 'html.parser')
+    try:
+        soup = BeautifulSoup(imdb_page_content, 'html.parser')
 
-    ratings_element = soup.find('span', itemprop="ratingValue")
-    if ratings_element is not None and ratings_element.string != '-':
-        return float(ratings_element.string.replace(',', '.'))
+        ratings_element = soup.find('span', itemprop="ratingValue")
+        if ratings_element is not None and ratings_element.string != '-':
+            return float(ratings_element.string.replace(',', '.'))
 
-    ratings_element = soup.find('div', class_="star-box-giga-star")
-    if ratings_element is not None:
-        return float(ratings_element.string)
+        ratings_element = soup.find('div', class_="star-box-giga-star")
+        if ratings_element is not None:
+            return float(ratings_element.string)
 
-    ratings_element = soup.find('span', class_="rating-rating")
-    if ratings_element is not None:
-        if type(ratings_element.contents[0]) is element.NavigableString:
-            return float(ratings_element.contents[0].string)
-        else:
-            return float(ratings_element.span.string)
+        ratings_element = soup.find('span', class_="rating-rating")
+        if ratings_element is not None:
+            if type(ratings_element.contents[0]) is element.NavigableString:
+                return float(ratings_element.contents[0].string)
+            else:
+                return float(ratings_element.span.string)
 
-    # Fallback, find a string matching "float/10"
-    ratings_ovr_ten = soup.find(string=re.compile("^[\d\.]+/10$"))
-    if ratings_ovr_ten is not None:
-        return float(ratings_ovr_ten.string.split('/')[0])
+        # Fallback, find a string matching "float/10"
+        ratings_ovr_ten = soup.find(string=re.compile("^[\d\.]+/10$"))
+        if ratings_ovr_ten is not None:
+            return float(ratings_ovr_ten.string.split('/')[0])
 
-    raise ScrapeError('Could not extract ratings')
+        raise ScrapeError('Ratings not found')
+    except ValueError:
+        raise ScrapeError('Not a valid number')
