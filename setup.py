@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='mrot',
-      version='0.3',
+      version='0.3.1',
       description='Movie ratings over time',
       author='Arthur Brenaut',
       author_email='arthur.brenaut@gmail.com',
