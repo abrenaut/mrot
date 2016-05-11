@@ -80,6 +80,7 @@ class IMDbMovie(object):
         ratings_fig.set_ylim([max(min(ratings.values()) - 1, 0), min(max(ratings.values()) + 1, 10)])
 
         # Show the figure
+        plt.setp(ratings_fig.get_xticklabels(), rotation=30, horizontalalignment='right')
         plt.show()
 
 
