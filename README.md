@@ -1,3 +1,5 @@
+![Troll 2](https://raw.githubusercontent.com/abrenaut/mrot/master/screenshot.png)
+
 # Movie Ratings Over Time
 
 Plot the evolution over time of a movie's rating using [The Wayback Machine](https://archive.org/web/).
