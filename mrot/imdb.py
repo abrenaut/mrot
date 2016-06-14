@@ -1,17 +1,17 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 import logging
 import re
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from PIL import Image
-import urllib2
-import urllib
+from urllib.request import urlopen, Request
+from urllib.parse import urlencode
 import json
 from bs4 import BeautifulSoup, element
-from datetime import datetime
-from .exceptions import ScrapeError
-from . import wayback
+from datetime import datetime, timedelta
+from waybackscraper.exceptions import ScrapeError
+from waybackscraper import wayback
 
 logger = logging.getLogger('mrot.imdb')
 
@@ -40,8 +40,11 @@ class IMDbMovie(object):
         imdb_url = IMDB_MOVIE_TEMPLATE.format(movie_id=self.imdb_id)
 
         # Use the wayback machine to scrape the ratings of the movie over time
-        ratings = wayback.scrape_archive(imdb_url, read_ratings, datetime(self.year, 1, 1, 0, 0), datetime.now(),
-                                         concurrency, delta)
+        ratings = wayback.scrape_archives(imdb_url, read_ratings, datetime(self.year, 1, 1, 0, 0), datetime.now(),
+                                          timedelta(days=delta), concurrency)
+
+        # Index ratings by the corresponding archive date
+        ratings = {archive.date: rating for archive, rating in ratings.items()}
 
         return ratings
 
@@ -54,34 +57,37 @@ class IMDbMovie(object):
         # Download the movie ratings
         ratings = self.download_ratings(concurrency, delta)
 
-        # Show the ratings and the movie poster on one figure
-        fig = plt.figure()
+        if ratings:
+            # Show the ratings and the movie poster on one figure
+            fig = plt.figure()
 
-        # 1 row, 2 columns position 1
-        img_fig = fig.add_subplot(121)
-        # Hide axis around the poster
-        img_fig.axes.get_xaxis().set_visible(False)
-        img_fig.axes.get_yaxis().set_visible(False)
-        # Show the poster on the first column
-        poster = self.poster if self.poster != 'N/A' else IMDB_NO_POSTER
-        f = urllib2.urlopen(poster)
-        img = Image.open(f)
-        img_fig.imshow(img)
+            # 1 row, 2 columns position 1
+            img_fig = fig.add_subplot(121)
+            # Hide axis around the poster
+            img_fig.axes.get_xaxis().set_visible(False)
+            img_fig.axes.get_yaxis().set_visible(False)
+            # Show the poster on the first column
+            poster = self.poster if self.poster != 'N/A' else IMDB_NO_POSTER
+            f = urlopen(poster)
+            img = Image.open(f)
+            img_fig.imshow(img)
 
-        # 1 row, 2 columns position 2
-        ratings_fig = fig.add_subplot(122)
-        # Show ratings on the second column
-        sorted_keys = sorted(ratings.keys())
-        axis_values = mdates.date2num(sorted_keys)
-        ratings_fig.plot_date(x=axis_values, y=[ratings[key] for key in sorted_keys], fmt="r-")
-        ratings_fig.set_title('Ratings of the movie "{title}" over time'.format(title=self.title))
-        ratings_fig.set_ylabel("Ratings")
-        # Set the range of the y value to (min_rating - 1), (max_rating + 1)
-        ratings_fig.set_ylim([max(min(ratings.values()) - 1, 0), min(max(ratings.values()) + 1, 10)])
+            # 1 row, 2 columns position 2
+            ratings_fig = fig.add_subplot(122)
+            # Show ratings on the second column
+            sorted_keys = sorted(ratings.keys())
+            axis_values = mdates.date2num(sorted_keys)
+            ratings_fig.plot_date(x=axis_values, y=[ratings[key] for key in sorted_keys], fmt="r-")
+            ratings_fig.set_title('Ratings of the movie "{title}" over time'.format(title=self.title))
+            ratings_fig.set_ylabel("Ratings")
+            # Set the range of the y value to (min_rating - 1), (max_rating + 1)
+            ratings_fig.set_ylim([max(min(ratings.values()) - 1, 0), min(max(ratings.values()) + 1, 10)])
 
-        # Show the figure
-        plt.setp(ratings_fig.get_xticklabels(), rotation=30, horizontalalignment='right')
-        plt.show()
+            # Show the figure
+            plt.setp(ratings_fig.get_xticklabels(), rotation=30, horizontalalignment='right')
+            plt.show()
+        else:
+            logger.info('No ratings found for the movie {movie_name}.'.format(movie_name=self.title))
 
 
 def find_movies(movie_name):
@@ -110,22 +116,21 @@ def query_search_api(s='', type_filter='movie'):
     :param type_filter: Type of result to return.
     :return:
     """
-    query = urllib.urlencode({'s': s, 'type': type_filter})
+    query = urlencode({'s': s, 'type': type_filter})
 
     omdb_api_url = OMDB_API_TEMPLATE.format(query=query)
-    req = urllib2.Request(omdb_api_url)
+    req = Request(omdb_api_url)
 
     # Read and decode the API response
-    response_json = urllib2.urlopen(req).read().decode("utf-8")
+    response_json = urlopen(req).read().decode("utf-8")
     response = json.loads(response_json)
 
     return response
 
 
-def read_ratings(imdb_page_content):
+async def read_ratings(archive, imdb_page_content):
     """
     Extract a movie rating from its imdb page
-    :param imdb_page_content:
     :raise: A ScrapeError if the rating could not be extracted
     :return:
     """

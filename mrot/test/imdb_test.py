@@ -1,4 +1,5 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
+
 import unittest
 import glob
 from mrot import imdb
@@ -11,7 +12,7 @@ class TestMovie(unittest.TestCase):
         :return:
         """
         for imdb_page_path in glob.glob('resources/imdb*.html'):
-            with open(imdb_page_path) as imdb_page:
+            with open(imdb_page_path, encoding='utf-8') as imdb_page:
                 imdb_page_content = imdb_page.read()
                 movie_score = imdb.read_ratings(imdb_page_content)
                 self.assertIsInstance(movie_score, float)

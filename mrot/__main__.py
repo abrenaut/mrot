@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 """
 Convenience wrapper for running mrot directly from source tree.
 """
 
-from . import cli
+from .cli import main
 
 if __name__ == '__main__':
-    cli.main()
+    main()

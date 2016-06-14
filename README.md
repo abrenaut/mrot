@@ -4,9 +4,9 @@
 
 Plot the evolution over time of a movie's rating using [The Wayback Machine](https://archive.org/web/).
 
-## Inspiration
+## Prerequisites 
 
-This project was inspired by the [Waybackpack](https://github.com/jsvine/waybackpack) project.
+This project requires Python >= 3.5
 
 ## Installing 
 
@@ -32,7 +32,7 @@ To download dependencies:
 ## Features
 
 * Queries [OMDb API](http://omdbapi.com/) to obtain movie information
-* Scrape IMDb archives on [The Wayback Machine](https://archive.org/web/) to extract movie ratings
+* Use the [The Wayback Scraper](https://github.com/abrenaut/waybackscraper/) to download imdb archives
 * Plot the ratings using matplotlib
     
 ## Usage
@@ -48,7 +48,7 @@ To download dependencies:
       -h, --help            show this help message and exit
       -c CONCURRENCY, --concurrency CONCURRENCY
                             maximum number of concurrent requests to the wayback
-                            machine (default: 5)
+                            machine (default: 10)
       -d DELTA, --delta DELTA
                             minimum number of days between two ratings (default:
                             365)
