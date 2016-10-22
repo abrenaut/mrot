@@ -17,6 +17,6 @@ setup(name='mrot',
           'matplotlib',  # Plotting module
           'bs4',  # BeautifulSoup scraping module
           'Pillow',  # Image library used to display movie posters
-          'waybackscraper'
+          'waybackscraper==0.5'
       ],
       zip_safe=False)

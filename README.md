@@ -12,6 +12,8 @@ This project requires Python >= 3.5
 
 To install, simply:
  
+    virtualenv /path/to/mrot-venv
+    source /path/to/mrot-venv/bin/activate
     pip install mrot
     
 To plot the ratings over time of the movie 'Memento':
@@ -27,7 +29,9 @@ To download the project:
     
 To download dependencies:
     
-    python setup.py install
+    virtualenv /path/to/mrot-venv
+    source /path/to/mrot-venv/bin/activate
+    pip install -r requirements.txt
 
 ## Features
 
@@ -48,7 +52,7 @@ To download dependencies:
       -h, --help            show this help message and exit
       -c CONCURRENCY, --concurrency CONCURRENCY
                             maximum number of concurrent requests to the wayback
-                            machine (default: 10)
+                            machine (default: 2)
       -d DELTA, --delta DELTA
                             minimum number of days between two ratings (default:
                             365)

@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument('movie_name', help='the name of the movie')
 
     # Optional arguments
-    parser.add_argument("-c", "--concurrency", type=int, default=10,
+    parser.add_argument("-c", "--concurrency", type=int, default=2,
                         help="maximum number of concurrent requests to the wayback machine")
     parser.add_argument("-d", "--delta", type=int, default=365, help="minimum number of days between two ratings")
     parser.add_argument("-q", "--quiet", action="store_true", help="don't print progress")
@@ -30,7 +30,7 @@ def main():
     logging.basicConfig(level=(logging.WARN if args.quiet else logging.INFO))
 
     # Don't allow more than 20 concurrent requests to the wayback machine
-    concurrency = min(args.concurrency, 20)
+    concurrency = min(args.concurrency, 10)
 
     # Find the movies corresponding to the given movie name
     imdb_movies = find_movies(args.movie_name)

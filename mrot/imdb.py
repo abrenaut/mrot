@@ -5,7 +5,7 @@ import re
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from PIL import Image
-from urllib.request import urlopen, Request
+from urllib.request import urlopen
 from urllib.parse import urlencode
 import json
 from bs4 import BeautifulSoup, element
@@ -40,11 +40,10 @@ class IMDbMovie(object):
         imdb_url = IMDB_MOVIE_TEMPLATE.format(movie_id=self.imdb_id)
 
         # Use the wayback machine to scrape the ratings of the movie over time
-        ratings = wayback.scrape_archives(imdb_url, read_ratings, datetime(self.year, 1, 1, 0, 0), datetime.now(),
-                                          timedelta(days=delta), concurrency)
-
-        # Index ratings by the corresponding archive date
-        ratings = {archive.date: rating for archive, rating in ratings.items()}
+        ratings = wayback.scrape_archives(url=imdb_url, scrape_function=read_ratings,
+                                          min_date=datetime(self.year, 1, 1, 0, 0), max_date=datetime.now(),
+                                          user_agent='mrot', min_timedelta=timedelta(days=delta),
+                                          concurrency=concurrency)
 
         return ratings
 
@@ -103,8 +102,8 @@ def find_movies(movie_name):
     api_response = query_search_api(s=movie_name, type_filter='movie')
 
     if api_response['Response'] == 'True':
-        movies += [IMDbMovie(movie['Title'], int(movie['Year']), movie['imdbID'], movie['Poster']) for
-                   movie in api_response['Search']]
+        movies = [IMDbMovie(movie['Title'], int(movie['Year']), movie['imdbID'], movie['Poster']) for
+                  movie in api_response['Search']]
 
     return movies
 
@@ -119,23 +118,23 @@ def query_search_api(s='', type_filter='movie'):
     query = urlencode({'s': s, 'type': type_filter})
 
     omdb_api_url = OMDB_API_TEMPLATE.format(query=query)
-    req = Request(omdb_api_url)
 
-    # Read and decode the API response
-    response_json = urlopen(req).read().decode("utf-8")
-    response = json.loads(response_json)
+    with urlopen(omdb_api_url) as response:
+        # Read and decode the API response
+        json_response = response.read().decode("utf-8")
+        result = json.loads(json_response)
 
-    return response
+    return result
 
 
-async def read_ratings(archive, imdb_page_content):
+async def read_ratings(session, archive_url, archive_timestamp, archive_content):
     """
     Extract a movie rating from its imdb page
     :raise: A ScrapeError if the rating could not be extracted
     :return:
     """
     try:
-        soup = BeautifulSoup(imdb_page_content, 'html.parser')
+        soup = BeautifulSoup(archive_content, 'html.parser')
 
         ratings_element = soup.find('span', itemprop="ratingValue")
         if ratings_element is not None and ratings_element.string != '-':
